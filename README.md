@@ -24,8 +24,8 @@ This project is a web-based application built with Flask that uses the YOLOv8 mo
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/violence-detection.git  # Replace with your repository URL
-cd violence-detection
+git clone https://github.com/sincanmaulanaa/violance-detection-YOLOv8.git
+cd violance-detection-YOLOv8
 ```
 
 #### 2. Set Up a Virtual Environment
@@ -64,8 +64,8 @@ python3 app.py
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/violence-detection.git  # Replace with your repository URL
-cd violence-detection
+git clone https://github.com/sincanmaulanaa/violance-detection-YOLOv8.git
+cd violence-detection-YOLOv8
 ```
 
 #### 2. Set Up a Virtual Environment
@@ -142,14 +142,6 @@ violence_detection/
 - **Performance Issues**: Reduce video resolution or increase frame skip in `app.py` if processing is slow.
 - **Access Denied**: If accessing from another device on the same network, ensure the firewall allows port 5000 (on macOS: System Settings > Network > Firewall; on Windows: Windows Defender Firewall > Allow an app through firewall).
 
-## Contributing
-
-Feel free to fork this repository, submit issues, or create pull requests to improve the project. Contributions are welcome!
-
-## License
-
-[Specify your license here, e.g., MIT License] - If you don't have a license yet, consider adding one (e.g., MIT) to define usage terms.
-
 ## Acknowledgments
 
 - [Ultralytics](https://github.com/ultralytics/ultralytics) for the YOLOv8 framework.
@@ -158,4 +150,4 @@ Feel free to fork this repository, submit issues, or create pull requests to imp
 
 ## Contact
 
-For questions or support, please open an issue on the repository or contact [your-email@example.com]. # Replace with your contact info
+For questions or support, please open an issue on the repository or contact [sincanmaulanaa.com]. # Replace with your contact info
