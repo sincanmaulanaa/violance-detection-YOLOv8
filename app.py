@@ -5,8 +5,11 @@ import cv2
 import time
 import glob
 import torch
+import requests
 from werkzeug.utils import secure_filename
 from moviepy import VideoFileClip
+import telegram
+import asyncio
 
 # Inisialisasi Flask
 app = Flask(__name__)
@@ -16,6 +19,22 @@ UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Batas 100 MB untuk video
+
+# Konfigurasi Telegram
+TELEGRAM_BOT_TOKEN = "7638807782:AAEvQJmNZCWhOSmoaBpUZ4LOqymdfMCzCLc"  # Ganti dengan token bot Anda
+TELEGRAM_CHAT_ID = "1185853665"  # Ganti dengan chat ID pengguna atau grup yang valid
+
+# Inisialisasi bot Telegram dengan konfigurasi connection pool
+bot = telegram.Bot(
+    token=TELEGRAM_BOT_TOKEN,
+    request=telegram.request.HTTPXRequest(
+        connection_pool_size=50,  # Tingkatkan ukuran pool
+        pool_timeout=30.0         # Timeout 30 detik
+    )
+)
+
+# Buat event loop global
+loop = asyncio.get_event_loop()
 
 # Pastikan folder upload ada
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -48,6 +67,44 @@ def convert_video_for_browser(input_path, output_path):
     except Exception as e:
         print(f"Conversion error: {e}")
         return False
+
+# Kirim notifikasi ke Telegram
+def send_telegram_notification_sync(message):
+    try:
+        print(f"Attempting to send to chat_id: {TELEGRAM_CHAT_ID}")
+        api_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+        }
+        
+        response = requests.post(api_url, data=payload)
+        if response.status_code == 200:
+            print(f"Telegram notification sent: {message}")
+            print(f"Telegram API response: {response.json()}")
+            return True
+        else:
+            print(f"Telegram API error: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+        return False
+    
+def send_telegram_photo(photo_path, caption):
+    try:
+        with open(photo_path, 'rb') as photo:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+            files = {'photo': photo}
+            data = {'chat_id': TELEGRAM_CHAT_ID, 'caption': caption}
+            response = requests.post(url, files=files, data=data)
+            return response.status_code == 200
+    except Exception as e:
+        print(f"Error sending photo: {e}")
+        return False
+    
+
 
 # Route untuk melayani file statis dari uploads
 @app.route('/static/uploads/<filename>')
@@ -96,6 +153,7 @@ def index():
                 return render_template('index.html', error='Failed to initialize video writer')
 
             frame_count = 0
+            violence_detected = False  # Flag untuk mendeteksi kekerasan
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
@@ -106,7 +164,9 @@ def index():
                     out.write(frame)  # Tulis frame asli jika dilewati
                     continue
                 results = model(frame, classes=[1], device=device)
-                if results and len(results) > 0:
+                if results and len(results) > 0 and len(results[0].boxes) > 0:
+                    # Kekerasan terdeteksi
+                    violence_detected = True
                     annotated_frame = results[0].plot()
                     out.write(annotated_frame)
                 else:
@@ -114,6 +174,18 @@ def index():
 
             cap.release()
             out.release()
+
+
+            # Kirim notifikasi ke Telegram jika kekerasan terdeteksi
+            if violence_detected:
+                cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg"), annotated_frame)
+                photo_path = os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg")
+        
+                message = f"⚠️ Tindak kekerasan terjadi pada video: {filename}\nDiproses pada: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+                notification_sent = send_telegram_notification_sync(message)
+                photo_sent = send_telegram_photo(photo_path, "Cuplikan tindak kekerasan pada video")
+                if not notification_sent:
+                    print("Warning: Could not send Telegram notification")
 
             # Konversi video untuk kompatibilitas browser
             if os.path.exists(temp_output_path) and os.path.getsize(temp_output_path) > 0:
