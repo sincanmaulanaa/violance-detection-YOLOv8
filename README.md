@@ -150,4 +150,4 @@ violence_detection/
 
 ## Contact
 
-For questions or support, please open an issue on the repository or contact [sincanmaulanaa.com]. # Replace with your contact info
+For questions or support, please open an issue on the repository or contact [sincanmaulanaa.com].
