@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Violence Detection</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Violence Detection with YOLOv8</h1>
+      <form method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="video/*" required />
+        <button type="submit">Detect</button>
+      </form>
+
+      {% if error %}
+      <p class="error">{{ error }}</p>
+      {% endif %} {% if original_video and result_video %}
+      <h2>Results</h2>
+      <div class="video-container">
+        <div>
+          <h3>Original Video</h3>
+          <video controls class="result-video">
+            <source src="{{ original_video }}" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div>
+          <h3>Detected Video</h3>
+          <video controls class="result-video" muted autoplay>
+            <source src="{{ result_video }}" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </body>
+</html>
