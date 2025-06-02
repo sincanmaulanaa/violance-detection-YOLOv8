@@ -34,29 +34,50 @@
 
       <h1 class="page-title"><i class="fas fa-search"></i> Detail Deteksi</h1>
 
+      <!-- Replace the metadata-card section with this code -->
+
       <div class="metadata-card">
         <h3><i class="fas fa-info-circle"></i> Informasi Video</h3>
-        <div class="metadata-content">
-          <p><strong>Filename:</strong> {{ detection.filename }}</p>
+        <div class="metadata-grid">
+          <div class="metadata-item">
+            <div class="metadata-label">Filename</div>
+            <div class="metadata-value">{{ detection.filename }}</div>
+          </div>
+
           {% if detection.room %}
-          <p><strong>Ruangan:</strong> {{ detection.room }}</p>
+          <div class="metadata-item">
+            <div class="metadata-label">Ruangan</div>
+            <div class="metadata-value">{{ detection.room }}</div>
+          </div>
           {% endif %} {% if detection.detection_date %}
-          <p><strong>Tanggal:</strong> {{ detection.detection_date }}</p>
+          <div class="metadata-item">
+            <div class="metadata-label">Tanggal</div>
+            <div class="metadata-value">{{ detection.detection_date }}</div>
+          </div>
           {% endif %} {% if detection.detection_time %}
-          <p><strong>Waktu:</strong> {{ detection.detection_time }}</p>
+          <div class="metadata-item">
+            <div class="metadata-label">Waktu</div>
+            <div class="metadata-value">{{ detection.detection_time }}</div>
+          </div>
           {% endif %}
-          <p>
-            <strong>Diproses Pada:</strong> {{
-            detection.processed_at.strftime('%d %B %Y %H:%M') }}
-          </p>
-          <p>
-            <strong>Status:</strong>
-            {% if detection.violence_detected %}
-            <span class="badge badge-danger">Kekerasan Terdeteksi</span>
-            {% else %}
-            <span class="badge badge-success">Aman</span>
-            {% endif %}
-          </p>
+
+          <div class="metadata-item">
+            <div class="metadata-label">Diproses Pada</div>
+            <div class="metadata-value">
+              {{ detection.processed_at.strftime('%d %B %Y %H:%M') }}
+            </div>
+          </div>
+
+          <div class="metadata-item">
+            <div class="metadata-label">Status</div>
+            <div class="metadata-value">
+              {% if detection.violence_detected %}
+              <span class="badge badge-danger">Kekerasan Terdeteksi</span>
+              {% else %}
+              <span class="badge badge-success">Aman</span>
+              {% endif %}
+            </div>
+          </div>
         </div>
       </div>
 
