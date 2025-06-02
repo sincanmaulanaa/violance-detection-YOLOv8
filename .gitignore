@@ -1,3 +1,63 @@
+# Virtual Environment
 .venv
-uploads
-__pycache__
+venv/
+env/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Uploaded media and generated content
+static/uploads/
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.png
+
+# Database
+*.db
+*.sqlite3
+instance/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.flaskenv
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# VS Code (optional - you may want to share these)
+# .vscode/
+
+# Model files (these can be large)
+*.pt
+*.pth
+*.onnx
+*.weights
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

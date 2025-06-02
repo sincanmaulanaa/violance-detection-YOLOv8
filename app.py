@@ -1,4 +1,7 @@
 from flask import Flask, request, render_template, url_for, send_from_directory
+from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from ultralytics import YOLO
 import os
 import cv2
@@ -6,6 +9,7 @@ import time
 import glob
 import torch
 import requests
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from moviepy import VideoFileClip
 import telegram
@@ -13,6 +17,12 @@ import asyncio
 
 # Inisialisasi Flask
 app = Flask(__name__)
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Konfigurasi
 UPLOAD_FOLDER = 'static/uploads'
@@ -23,6 +33,23 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Batas 100 MB untuk video
 # Konfigurasi Telegram
 TELEGRAM_BOT_TOKEN = "7638807782:AAEvQJmNZCWhOSmoaBpUZ4LOqymdfMCzCLc"
 TELEGRAM_CHAT_ID = "1185853665"
+
+class DetectionHistory(db.Model):
+    __tablename__ = 'detection_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    room = db.Column(db.String(50), nullable=True)
+    detection_date = db.Column(db.String(50), nullable=True)
+    detection_time = db.Column(db.String(20), nullable=True)
+    processed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    violence_detected = db.Column(db.Boolean, default=False)
+    original_video_path = db.Column(db.String(255))
+    result_video_path = db.Column(db.String(255))
+    screenshot_path = db.Column(db.String(255), nullable=True)
+    
+    def __repr__(self):
+        return f'<Detection {self.id}: {self.filename}>'
 
 # Inisialisasi bot Telegram dengan konfigurasi connection pool
 bot = telegram.Bot(
@@ -147,12 +174,20 @@ def send_telegram_photo(photo_path, caption):
         print(f"Error sending photo: {e}")
         return False
     
-
-
 # Route untuk melayani file statis dari uploads
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='video/mp4')
+
+@app.route('/history')
+def history():
+    detections = DetectionHistory.query.order_by(DetectionHistory.processed_at.desc()).all()
+    return render_template('history.html', detections=detections)
+
+@app.route('/view/<int:detection_id>')
+def view_detection(detection_id):
+    detection = DetectionHistory.query.get_or_404(detection_id)
+    return render_template('view_detection.html', detection=detection)
 
 # Route untuk halaman utama dan deteksi video
 @app.route('/', methods=['GET', 'POST'])
@@ -223,8 +258,12 @@ def index():
 
             # Kirim notifikasi ke Telegram jika kekerasan terdeteksi
             if violence_detected:
-                cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg"), annotated_frame)
-                photo_path = os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg")
+                
+                timestamp = int(time.time())
+                screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}_{timestamp}.jpg"
+                screenshot_path = os.path.join(app.config['UPLOAD_FOLDER'], screenshot_filename)
+                cv2.imwrite(screenshot_path, annotated_frame)
+                photo_path = screenshot_path
 
                 # Extract metadata from filename if available
                 metadata_str = ""
@@ -245,6 +284,28 @@ def index():
             if os.path.exists(temp_output_path) and os.path.getsize(temp_output_path) > 0:
                 if convert_video_for_browser(temp_output_path, output_path):
                     os.remove(temp_output_path)  # Hapus file sementara
+
+                     # Save detection to database
+                    screenshot_path = None
+                    if violence_detected:
+                        timestamp = int(time.time())
+                        screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}_{timestamp}.jpg"
+                        screenshot_path = os.path.join(app.config['UPLOAD_FOLDER'], screenshot_filename)
+                    
+                    detection = DetectionHistory(
+                        filename=filename,
+                        room=metadata['room'] if metadata else None,
+                        detection_date=metadata['date'] if metadata else None,
+                        detection_time=metadata['time'] if metadata else None,
+                        violence_detected=violence_detected,
+                        original_video_path=filepath,
+                        result_video_path=output_path,
+                        screenshot_path=screenshot_path
+                    )
+                    
+                    db.session.add(detection)
+                    db.session.commit()
+
                     return render_template('index.html',
                                         original_video=f'/static/uploads/{filename}',
                                         result_video=f'/static/uploads/{output_filename}?t={int(time.time())}', metadata=metadata)
