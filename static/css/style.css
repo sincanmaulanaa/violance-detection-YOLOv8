@@ -194,6 +194,35 @@ input[type='file'] {
   transform: translateY(-2px);
 }
 
+.metadata-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metadata-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.metadata-card h3 i {
+  margin-right: 0.5rem;
+}
+
+.metadata-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.metadata-content p {
+  margin: 0.5rem 0;
+}
+
 /* Alert Messages */
 .alert {
   padding: 1rem;

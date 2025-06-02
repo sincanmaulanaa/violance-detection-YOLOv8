@@ -21,8 +21,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Batas 100 MB untuk video
 
 # Konfigurasi Telegram
-TELEGRAM_BOT_TOKEN = "7638807782:AAEvQJmNZCWhOSmoaBpUZ4LOqymdfMCzCLc"  # Ganti dengan token bot Anda
-TELEGRAM_CHAT_ID = "1185853665"  # Ganti dengan chat ID pengguna atau grup yang valid
+TELEGRAM_BOT_TOKEN = "7638807782:AAEvQJmNZCWhOSmoaBpUZ4LOqymdfMCzCLc"
+TELEGRAM_CHAT_ID = "1185853665"
 
 # Inisialisasi bot Telegram dengan konfigurasi connection pool
 bot = telegram.Bot(
@@ -56,6 +56,49 @@ def clean_uploads():
     for f in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], '*')):
         if os.path.getmtime(f) < time.time() - 3600:
             os.remove(f)
+
+# Add this function after the import statements
+
+def parse_filename_metadata(filename):
+    """
+    Parse metadata from filename with format ROOM_DATE_TIME.mp4
+    Example: D404_11-06-25_11-00.mp4 -> Room D404, 11 June 2025, 11:00
+    """
+    try:
+        # Remove file extension
+        name_without_ext = filename.rsplit('.', 1)[0]
+        
+        # Split by underscore
+        parts = name_without_ext.split('_')
+        
+        if len(parts) != 3:
+            return None
+            
+        room, date_str, time_str = parts
+        
+        # Parse date (format: DD-MM-YY)
+        day, month, year = date_str.split('-')
+        # Add 20 prefix to year if it's 2 digits
+        if len(year) == 2:
+            year = f"20{year}"
+            
+        # Format date in a more readable way
+        months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                 'July', 'August', 'September', 'October', 'November', 'December']
+        formatted_date = f"{int(day)} {months[int(month)-1]} {year}"
+        
+        # Parse time (format: HH-MM)
+        hour, minute = time_str.split('-')
+        formatted_time = f"{hour}:{minute} WIB"
+        
+        return {
+            'room': room,
+            'date': formatted_date,
+            'time': formatted_time
+        }
+    except Exception as e:
+        print(f"Error parsing filename metadata: {e}")
+        return None
 
 # Konversi video untuk kompatibilitas browser
 def convert_video_for_browser(input_path, output_path):
@@ -125,6 +168,8 @@ def index():
             return render_template('index.html', error='No file selected')
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            metadata = parse_filename_metadata(filename)
+
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
@@ -161,7 +206,7 @@ def index():
                 frame_count += 1
                 # Proses setiap frame ke-2 untuk kecepatan
                 if frame_count % 2 != 0:
-                    out.write(frame)  # Tulis frame asli jika dilewati
+                    out.write(frame)
                     continue
                 results = model(frame, classes=[1], device=device)
                 if results and len(results) > 0 and len(results[0].boxes) > 0:
@@ -170,7 +215,7 @@ def index():
                     annotated_frame = results[0].plot()
                     out.write(annotated_frame)
                 else:
-                    out.write(frame)  # Tulis frame asli jika tidak ada deteksi
+                    out.write(frame)
 
             cap.release()
             out.release()
@@ -180,10 +225,19 @@ def index():
             if violence_detected:
                 cv2.imwrite(os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg"), annotated_frame)
                 photo_path = os.path.join(app.config['UPLOAD_FOLDER'], "violence_frame.jpg")
-        
-                message = f"⚠️ Tindak kekerasan terjadi pada video: {filename}\nDiproses pada: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+
+                # Extract metadata from filename if available
+                metadata_str = ""
+                metadata = parse_filename_metadata(filename)
+                if metadata:
+                    metadata_str = f"\nRuangan: {metadata['room']}\nTanggal: {metadata['date']}\nWaktu: {metadata['time']}"
+                
+                message = f"⚠️ Tindak kekerasan terjadi pada video: {filename}{metadata_str}\nDiproses pada: {time.strftime('%Y-%m-%d %H:%M:%S')}"
                 notification_sent = send_telegram_notification_sync(message)
-                photo_sent = send_telegram_photo(photo_path, "Cuplikan tindak kekerasan pada video")
+                photo_caption = "Cuplikan tindak kekerasan pada video"
+                if metadata:
+                    photo_caption += f" - Ruangan: {metadata['room']}"
+                photo_sent = send_telegram_photo(photo_path, photo_caption)
                 if not notification_sent:
                     print("Warning: Could not send Telegram notification")
 
@@ -193,7 +247,7 @@ def index():
                     os.remove(temp_output_path)  # Hapus file sementara
                     return render_template('index.html',
                                         original_video=f'/static/uploads/{filename}',
-                                        result_video=f'/static/uploads/{output_filename}?t={int(time.time())}')
+                                        result_video=f'/static/uploads/{output_filename}?t={int(time.time())}', metadata=metadata)
                 else:
                     os.remove(temp_output_path)
                     os.remove(filepath)
