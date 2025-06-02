@@ -326,3 +326,96 @@ footer p {
     padding: 1.5rem;
   }
 }
+
+/* Add these styles to your CSS file */
+
+/* Navigation */
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  color: var(--gray-color);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  transition: var(--transition);
+}
+
+.nav-link:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.nav-link.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Page Title */
+.page-title {
+  font-size: 1.75rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Back Link */
+.back-link {
+  margin-bottom: 1rem;
+}
+
+.back-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.back-link a:hover {
+  color: var(--primary-dark);
+}
+
+/* Screenshot */
+.screenshot-section {
+  margin-top: 2rem;
+}
+
+.screenshot-container {
+  background: white;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.screenshot-img {
+  width: 100%;
+  max-width: 800px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 5px;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-danger {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-success {
+  background-color: #d1fae5;
+  color: #059669;
+}

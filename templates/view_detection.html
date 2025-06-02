@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SINTESA - Detail Deteksi</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <i class="fas fa-shield-alt"></i>
+        <span>SINTESA</span>
+      </div>
+      <nav>
+        <a href="/" class="nav-link">Home</a>
+        <a href="/history" class="nav-link">History</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <div class="back-link">
+        <a href="/history">
+          <i class="fas fa-arrow-left"></i> Kembali ke Riwayat
+        </a>
+      </div>
+
+      <h1 class="page-title"><i class="fas fa-search"></i> Detail Deteksi</h1>
+
+      <div class="metadata-card">
+        <h3><i class="fas fa-info-circle"></i> Informasi Video</h3>
+        <div class="metadata-content">
+          <p><strong>Filename:</strong> {{ detection.filename }}</p>
+          {% if detection.room %}
+          <p><strong>Ruangan:</strong> {{ detection.room }}</p>
+          {% endif %} {% if detection.detection_date %}
+          <p><strong>Tanggal:</strong> {{ detection.detection_date }}</p>
+          {% endif %} {% if detection.detection_time %}
+          <p><strong>Waktu:</strong> {{ detection.detection_time }}</p>
+          {% endif %}
+          <p>
+            <strong>Diproses Pada:</strong> {{
+            detection.processed_at.strftime('%d %B %Y %H:%M') }}
+          </p>
+          <p>
+            <strong>Status:</strong>
+            {% if detection.violence_detected %}
+            <span class="badge badge-danger">Kekerasan Terdeteksi</span>
+            {% else %}
+            <span class="badge badge-success">Aman</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="results-section">
+        <h2><i class="fas fa-video"></i> Video</h2>
+
+        <div class="video-container">
+          <div class="video-card">
+            <h3><i class="fas fa-file-video"></i> Video Asli</h3>
+            <div class="video-wrapper">
+              <video controls class="result-video">
+                <source
+                  src="/static/uploads/{{ detection.filename }}"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+
+          <div class="video-card">
+            <h3><i class="fas fa-robot"></i> Video Terdeteksi</h3>
+            <div class="video-wrapper">
+              <video controls class="result-video" autoplay muted>
+                <source
+                  src="/static/uploads/result_{{ detection.filename }}"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+
+        {% if detection.violence_detected and detection.screenshot_path %}
+        <div class="screenshot-section">
+          <h2><i class="fas fa-camera"></i> Bukti Kekerasan</h2>
+          <div class="screenshot-container">
+            <img
+              src="/{{ detection.screenshot_path }}"
+              alt="Violence Screenshot"
+              class="screenshot-img"
+            />
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>
+          &copy; 2025 SINTESA - Sistem Informasi dan Teknologi Sadari Kekerasan
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

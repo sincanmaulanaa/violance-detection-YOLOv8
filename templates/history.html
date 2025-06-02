@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SINTESA - Riwayat Deteksi</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      th {
+        background-color: var(--primary-light);
+        color: var(--primary-dark);
+        font-weight: 600;
+      }
+
+      tbody tr:hover {
+        background-color: #f8f9fa;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .badge-danger {
+        background-color: #fee2e2;
+        color: #dc2626;
+      }
+
+      .badge-success {
+        background-color: #d1fae5;
+        color: #059669;
+      }
+
+      .action-btn {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        background-color: var(--primary-color);
+        color: white;
+        text-decoration: none;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <i class="fas fa-shield-alt"></i>
+        <span>SINTESA</span>
+      </div>
+      <nav>
+        <a href="/" class="nav-link">Home</a>
+        <a href="/history" class="nav-link active">History</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <h1 class="page-title"><i class="fas fa-history"></i> Riwayat Deteksi</h1>
+
+      {% if detections %}
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Ruangan</th>
+              <th>Tanggal & Waktu</th>
+              <th>Diproses Pada</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for detection in detections %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                {% if detection.room %}{{ detection.room }}{% else %}Tidak
+                diketahui{% endif %}
+              </td>
+              <td>
+                {% if detection.detection_date and detection.detection_time %}
+                {{ detection.detection_date }} {{ detection.detection_time }} {%
+                else %} Tidak diketahui {% endif %}
+              </td>
+              <td>{{ detection.processed_at.strftime('%d %B %Y %H:%M') }}</td>
+              <td>
+                {% if detection.violence_detected %}
+                <span class="badge badge-danger">Kekerasan Terdeteksi</span>
+                {% else %}
+                <span class="badge badge-success">Aman</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="/view/{{ detection.id }}" class="action-btn">
+                  <i class="fas fa-eye"></i> Lihat
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert">
+        <i class="fas fa-info-circle"></i> Belum ada riwayat deteksi.
+      </div>
+      {% endif %}
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>
+          &copy; 2025 SINTESA - Sistem Informasi dan Teknologi Sadari Kekerasan
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

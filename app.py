@@ -259,8 +259,7 @@ def index():
             # Kirim notifikasi ke Telegram jika kekerasan terdeteksi
             if violence_detected:
                 
-                timestamp = int(time.time())
-                screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}_{timestamp}.jpg"
+                screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}.jpg"
                 screenshot_path = os.path.join(app.config['UPLOAD_FOLDER'], screenshot_filename)
                 cv2.imwrite(screenshot_path, annotated_frame)
                 photo_path = screenshot_path
@@ -288,8 +287,7 @@ def index():
                      # Save detection to database
                     screenshot_path = None
                     if violence_detected:
-                        timestamp = int(time.time())
-                        screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}_{timestamp}.jpg"
+                        screenshot_filename = f"violence_frame_{os.path.splitext(filename)[0]}.jpg"
                         screenshot_path = os.path.join(app.config['UPLOAD_FOLDER'], screenshot_filename)
                     
                     detection = DetectionHistory(
