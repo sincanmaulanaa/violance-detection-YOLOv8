@@ -72,7 +72,15 @@ model = YOLO('yolov8violence_final.pt')
 # Optimasi untuk M1 (MPS) atau CPU
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
 model.to(device)
+
+# Model optimization settings
+model.overrides['conf'] = 0.25  # Much lower confidence threshold for testing
+model.overrides['iou'] = 0.5    # IoU threshold untuk NMS
+model.overrides['max_det'] = 50  # More detections per image
+model.overrides['half'] = False  # Disable FP16 untuk akurasi lebih baik
+
 print(f"Using device: {device}")
+print(f"Model settings - conf: {model.overrides['conf']}, iou: {model.overrides['iou']}")
 
 # Cek ekstensi file yang diizinkan
 def allowed_file(filename):
@@ -85,6 +93,27 @@ def clean_uploads():
             os.remove(f)
 
 # Add this function after the import statements
+
+def preprocess_frame(frame):
+    """
+    Preprocess frame untuk meningkatkan akurasi deteksi
+    """
+    # Enhance contrast dan brightness untuk deteksi yang lebih baik
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    
+    # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    l = clahe.apply(l)
+    
+    # Merge channels dan convert kembali ke BGR
+    enhanced = cv2.merge([l, a, b])
+    enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+    
+    # Optional: noise reduction
+    enhanced = cv2.bilateralFilter(enhanced, 9, 75, 75)
+    
+    return enhanced
 
 def parse_filename_metadata(filename):
     """
@@ -234,26 +263,87 @@ def index():
 
             frame_count = 0
             violence_detected = False  # Flag untuk mendeteksi kekerasan
+            violence_frames = []  # Store frames with violence detection
+            violence_confidence_scores = []  # Store confidence scores
+            consecutive_violence_frames = 0  # Track consecutive violence detections
+            total_frames_processed = 0
+            
+            print(f"Starting video processing...")
+            print(f"Video dimensions: {width}x{height}")
+            print(f"Video FPS: {fps}")
+            print(f"Model classes available: {model.names}")
+            print(f"Looking for class index 1 (should be violence)")
+            
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
                     break
                 frame_count += 1
-                # Proses setiap frame ke-2 untuk kecepatan
+                # Proses setiap frame ke-2 untuk debugging (lebih sering)
                 if frame_count % 2 != 0:
                     out.write(frame)
                     continue
-                results = model(frame, classes=[1], device=device)
+                
+                total_frames_processed += 1
+                
+                # Sementara tidak menggunakan preprocessing untuk debug
+                # processed_frame = preprocess_frame(frame)
+                
+                # Gunakan confidence threshold yang sangat rendah untuk testing
+                results = model(frame, classes=[1], device=device, conf=0.25, iou=0.5)
+                
+                print(f"Frame {frame_count}: Processing results...")
+                
+                # Simplify detection logic untuk debugging
                 if results and len(results) > 0 and len(results[0].boxes) > 0:
-                    # Kekerasan terdeteksi
-                    violence_detected = True
-                    annotated_frame = results[0].plot()
-                    out.write(annotated_frame)
+                    boxes = results[0].boxes
+                    confidences = boxes.conf.cpu().numpy()
+                    
+                    print(f"Frame {frame_count}: Found {len(confidences)} detections")
+                    print(f"Frame {frame_count}: Confidences: {confidences}")
+                    
+                    # Accept any detection above 0.25
+                    for conf in confidences:
+                        if conf >= 0.25:
+                            violence_detected = True
+                            violence_frames.append(frame_count)
+                            violence_confidence_scores.append(conf)
+                            annotated_frame = results[0].plot()
+                            out.write(annotated_frame)
+                            print(f"Frame {frame_count}: VIOLENCE DETECTED with confidence {conf:.3f}")
+                            break
+                    else:
+                        out.write(frame)
+                        print(f"Frame {frame_count}: No qualifying detections")
                 else:
                     out.write(frame)
+                    print(f"Frame {frame_count}: No detections found")
 
             cap.release()
             out.release()
+
+            # Simplified post-processing untuk debugging
+            print(f"\nFinal violence detection stats:")
+            print(f"- Violence detected flag: {violence_detected}")
+            print(f"- Frames with violence: {len(violence_frames)}")
+            print(f"- Total frames processed: {total_frames_processed}")
+            
+            if len(violence_frames) > 0:
+                violence_frame_ratio = len(violence_frames) / max(total_frames_processed, 1)
+                avg_confidence = sum(violence_confidence_scores) / len(violence_confidence_scores)
+                print(f"- Violence ratio: {violence_frame_ratio:.3f}")
+                print(f"- Average confidence: {avg_confidence:.3f}")
+                
+                # Much more permissive validation
+                if len(violence_frames) >= 1:  # Just need 1 frame
+                    print("Violence detection ACCEPTED")
+                    violence_detected = True
+                else:
+                    print("Violence detection REJECTED: no frames")
+                    violence_detected = False
+            else:
+                print("Violence detection REJECTED: no violence frames detected")
+                violence_detected = False
 
 
             # Kirim notifikasi ke Telegram jika kekerasan terdeteksi
